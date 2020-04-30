@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Basic sigma.js example</title>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+  <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+  <style type="text/css">
+    body {
+      margin: 0;
+    }
+    #graph {
+      width: 700px;
+      height: 700px;
+      border-width:3px !important; 
+    }
+    #outputconsole {
+      border-width:3px !important; 
+      height:200px;
+      font-family: monospace;
+    }
+    div{
+      margin-top:10px;
+      margin-bottom:10px;
+    }
+    #constraintSelection{
+      height:200px;
+      overflow:hidden; overflow-y:scroll;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="row">
+  <div class="col-lg">
+  <div id="graph" class="border rounded"></div>
+  </div>
+
+  <div class="col-sm">
+  Ctrl-Click to add node of type:<br>
+  <select id="nodeTypes">
+  <option value="source">source</option>
+  <option value="inter">non-source</option>
+  <option value="sink">sink</option>
+  </select>
+  <br>Select function you wish to compute on graph<br>
+  <select id="functionTypes">
+  <option value="NetSymGroup">NetSymGroup</option>
+  <option value="ncrateregionob">NCRateRegionOB</option>
+  <option value="NCSumRateUB">NCSumRateUB</option>
+  </select>
+  <br>Set constraints on nodes you wish to be sinks (do this after drawing all nodes and edges)<br>
+  <ul class="list-group" id="selectConstraints">
+  <li class="list-group-item">Node 1 constraints:<select class="multiselect-ui form-control" multiple="multiple">
+    <option>Source1</option>
+    <option>Source2</option>
+  </select></li>
+</ul><br>
+  <button id="compute" class="btn btn-primary">Compute</button>
+  <div>
+    <br>GAP output<br>
+    <div style="overflow-x: auto; overflow-y:auto; width=200px" id="outputconsole" class="border rounded">Output from GAP</div>
+
+</div>
+</div>
+</div>
+
+  <script src="./sigma.min.js"></script>
+  <script src="./sigma.plugins.dragNodes.js"></script>
+  <script>    // Let's first initialize sigma:
+    let s = new sigma('graph');
+    var nodeSize = 10;
+    s.settings({
+      autoRescale: false,
+        immutable: true,
+        clone: false,
+              nodesPowRatio: 1,
+      edgesPowRatio: 1,
+      mouseEnabled: true,
+      touchEnabled: false,
+      });
+    //document.getElementById("graph").addEventListener('contextmenu', function(e) {
+     // e.preventDefault()}, false);
+
+    var numNodes = 0;
+    var sources = [];
+    var sinklist = [];
+    var constraints = {}
+    function addSource(x, y){
+
+      s.graph.addNode({
+      // Main attributes:
+      id: numNodes.toString(),
+      label: 'Source '+numNodes.toString(),
+      // Display attributes:
+      x: x,
+      y: y,
+      size: nodeSize,
+      color: '#f00'
+    })
+    sources.push({id:numNodes.toString(), label:'Source '+numNodes.toString()})
+    }
+    function addInter(x, y){
+      s.graph.addNode({
+      // Main attributes:
+      id: numNodes.toString(),
+      label: 'Node '+numNodes.toString(),
+      // Display attributes:
+      x: x,
+      y: y,
+      size: nodeSize,
+
+      color: '#dad7d6'
+    })
+    }
+function addSink(x, y){
+
+      s.graph.addNode({
+      // Main attributes:
+      id: numNodes.toString(),
+      label: 'Sink '+numNodes.toString(),
+      // Display attributes:
+      x: x,
+      y: y,
+      size: nodeSize,
+      color: '#f00'
+    })
+        sinklist.push({id:numNodes.toString(), label:'Sink '+numNodes.toString()});
+
+    }
+
+    //add default graph
+      for (const element of [1, 2, 3]){
+        numNodes++;
+        addSource(100*element-300, -300);
+
+      }
+      s.refresh();
+      document.getElementById("compute").addEventListener("click", function(e) {
+        func = document.getElementById("functionTypes").value
+        xhr = new XMLHttpRequest();
+        var url = "http://127.0.0.1:5000/itcpendpoint";
+        xhr.open("POST", url, true);
+        xhr.setRequestHeader("Content-type", "application/json");
+        xhr.setRequestHeader("Access-Control-Allow-Origin", "*");
+        console.log(xhr);
+        xhr.onreadystatechange = function () { 
+        if (xhr.readyState == 4 && xhr.status == 200) {
+            console.log(xhr.responseText)
+            document.getElementById("outputconsole").textContent = xhr.responseText;
+            }
+        }
+        var data = JSON.stringify({"function":func,"idsc":createGapConstraints()});
+        console.log(data)
+        xhr.send(data);
+
+      })
+    //window.addEventListener('click', function(e){s.refresh(); console.log(e)});
+    dom = document.querySelector('#graph canvas:last-child');
+console.log(s)
+    dom.addEventListener("click", function(e){
+      if(window.event.ctrlKey){
+        console.log(s);
+      c = dom.getBoundingClientRect()
+      x = e.layerX-c.width/2+s.camera.x;
+      y=  e.layerY-c.height/2+s.camera.y;
+      console.log(x, y)
+      numNodes++;
+      switch(document.getElementById("nodeTypes").value){
+        case "source":
+          addSource(x, y);
+          break;
+        case "inter":
+          addInter(x, y);
+          break;
+        case "sink":
+          addSink(x, y);
+          break;
+      }
+      s.refresh();
+      var entry = document.getElementById("selectConstraints");
+      var template = "";
+      sinklist.forEach(function(obj){
+        template+="<li class=\"list-group-item\">"+obj.label+" constraints:<select data-nodeid=\""+obj.id+"\" id=\"constraint"+obj.id+"\" class=\"multiselect-ui form-control\" multiple=\"multiple\">";
+        sources.forEach(function(source){template+="<option data-nodeid=\""+source.id+"\">"+source.label+"</option>";
+});
+        template+="</select></li>";});
+      entry.innerHTML = template;
+      console.log(template);
+      }
+      
+    });
+    function createGapConstraints(){
+      d = {}
+      sinkconstraints = {}
+      document.querySelectorAll('[id^="constraint"]').forEach(function(c){
+        sinkconstraints[parseInt(c.dataset.nodeid)] = Array.from(c.selectedOptions).map(x => parseInt(x.dataset.nodeid));});
+      sourcesset = new Set(sources.map(x=>parseInt(x.id)));
+      sinkset = new Set(sinklist.map(x=>parseInt(x.id)));
+      console.log(sinkset)
+      s.graph.nodes().forEach(function(n){
+        i = parseInt(n.id);
+        if(!sourcesset.has(i)) d[i] = [];})
+      s.graph.edges().forEach(function(e){
+        if(!sourcesset.has(parseInt(e.target)))
+        d[parseInt(e.target)].push(parseInt(e.source));
+      });
+      ret = [];
+      console.log(d);
+      for (const [n, incoming] of Object.entries(d)) {
+        if(!sinkset.has(n)){
+          ret.push([incoming, incoming.concat([n])])
+        }         
+      }
+      for (const [key, needs] of Object.entries(sinkconstraints)) {
+        incoming = d[key];
+        ret.push([incoming, needs.concat(incoming)])
+      }
+      return JSON.stringify([ret].concat(sources.length, numNodes-sinklist.length));
+    }
+    var nodes = [];
+    s.bind("clickNodes", function(data){
+      nodes.push(data.data.node[0])
+      console.log(nodes);
+      if(nodes.length <= 1){
+        return;
+      }
+      source = nodes[nodes.length-2].id;
+      target = nodes[nodes.length-1].id;
+      s.graph.addEdge({id: source+target,
+    source: source,
+    target: target,
+    size: 3,
+    type: 'curve',
+    color: '#ccc',
+    hover_color: '#000'});
+      s.refresh();
+      nodes = [];
+
+    });
+  </script>
+</body>
+</html>
