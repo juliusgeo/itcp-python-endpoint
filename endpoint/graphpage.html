@@ -79,6 +79,7 @@
       edgesPowRatio: 1,
       mouseEnabled: true,
       touchEnabled: false,
+      labelThreshold: 0
       });
     //document.getElementById("graph").addEventListener('contextmenu', function(e) {
      // e.preventDefault()}, false);
@@ -87,6 +88,8 @@
     var sources = [];
     var sinklist = [];
     var constraints = {}
+    var messageSourceNode = null;
+    var numIgnoreNodes = 0;
     function addSource(x, y){
 
       s.graph.addNode({
@@ -97,15 +100,15 @@
       x: x,
       y: y,
       size: nodeSize,
-      color: '#f00'
+      color: '#ebae34'
     })
     sources.push({id:numNodes.toString(), label:'Source '+numNodes.toString()})
     }
     function addInter(x, y){
       s.graph.addNode({
       // Main attributes:
-      id: numNodes.toString(),
-      label: 'Node '+numNodes.toString(),
+      id: 'Node'+numIgnoreNodes.toString(),
+      label: 'Node '+numIgnoreNodes.toString(),
       // Display attributes:
       x: x,
       y: y,
@@ -124,7 +127,7 @@ function addSink(x, y){
       x: x,
       y: y,
       size: nodeSize,
-      color: '#f00'
+      color: '#349ceb'
     })
         sinklist.push({id:numNodes.toString(), label:'Sink '+numNodes.toString()});
 
@@ -157,37 +160,92 @@ function addSink(x, y){
 
       })
     //window.addEventListener('click', function(e){s.refresh(); console.log(e)});
+    function addMessage(e){
+      if(window.event.shiftKey){
+        messageSourceNode = e.data.node.id;
+        console.log(messageSourceNode);
+      }
+      else{
+
+      }
+
+    }
+    s.bind("clickNode", addMessage);
     dom = document.querySelector('#graph canvas:last-child');
 console.log(s)
-    dom.addEventListener("click", function(e){
-      if(window.event.ctrlKey){
-        console.log(s);
-      c = dom.getBoundingClientRect()
-      x = e.layerX-c.width/2+s.camera.x;
-      y=  e.layerY-c.height/2+s.camera.y;
-      console.log(x, y)
-      numNodes++;
-      switch(document.getElementById("nodeTypes").value){
-        case "source":
-          addSource(x, y);
-          break;
-        case "inter":
-          addInter(x, y);
-          break;
-        case "sink":
-          addSink(x, y);
-          break;
+    //dom.addEventListener("click", function(e){
+      s.bind("clickStage", function(e){
+        x = e.data.captor.x;
+        y = e.data.captor.y;
+        if(messageSourceNode != null){
+          console.log(messageSourceNode)
+          numNodes++;
+          if(window.event.shiftKey){
+            s.graph.addNode({
+          // Main attributes:
+          id: numNodes.toString(),
+          label: 'Message '+numNodes.toString(),
+          // Display attributes:
+          x: x,
+          y: y,
+          size: nodeSize/2,
+          color: '#ccc'
+          })
+          }
+          s.graph.addEdge({id: messageSourceNode+"message"+numNodes.toString(),
+          source: messageSourceNode,
+          target: numNodes.toString(),
+          size: 4,
+          type: 'curve',
+          color: '#ccc',
+          hover_color: '#000'});
+          s.refresh();
+          messageSourceNode = null;
+          return;
       }
-      s.refresh();
-      var entry = document.getElementById("selectConstraints");
-      var template = "";
-      sinklist.forEach(function(obj){
-        template+="<li class=\"list-group-item\">"+obj.label+" constraints:<select data-nodeid=\""+obj.id+"\" id=\"constraint"+obj.id+"\" class=\"multiselect-ui form-control\" multiple=\"multiple\">";
-        sources.forEach(function(source){template+="<option data-nodeid=\""+source.id+"\">"+source.label+"</option>";
-});
-        template+="</select></li>";});
-      entry.innerHTML = template;
-      console.log(template);
+        
+      if(window.event.ctrlKey){
+        console.log(e);
+        console.log(x, y)
+        
+        switch(document.getElementById("nodeTypes").value){
+          case "source":
+            numNodes++;
+            addSource(x, y);
+            break;
+          case "inter":
+            numIgnoreNodes++;
+            addInter(x, y);
+            break;
+          case "sink":
+            numNodes++;
+            addSink(x, y);
+            break;
+        }
+        s.refresh();
+        var entry = document.getElementById("selectConstraints");
+        var template = "";
+        sinklist.forEach(function(obj){
+          template+="<li class=\"list-group-item\">"+obj.label+" constraints:<select data-nodeid=\""+obj.id+"\" id=\"constraint"+obj.id+"\" class=\"multiselect-ui form-control\" multiple=\"multiple\">";
+          sources.forEach(function(source){template+="<option data-nodeid=\""+source.id+"\">"+source.label+"</option>";
+  });
+          template+="</select></li>";
+        });
+        entry.innerHTML = template;
+        document.querySelectorAll('[id^="constraint"]').forEach(function(c){
+          c.addEventListener("click", function(e){
+            var sinknodeid = this.dataset.nodeid;
+            var selectedopts = Array.from(this.selectedOptions).map(x => parseInt(x.dataset.nodeid))
+            s.graph.nodes().forEach(function(n){
+              if(n.id == sinknodeid){
+                n.label = "Sink "+sinknodeid+": "+selectedopts.join();
+              }
+            })
+            s.refresh();
+            return;
+          })
+      });
+        console.log(template);
       }
       
     });
@@ -195,32 +253,47 @@ console.log(s)
       d = {}
       sinkconstraints = {}
       document.querySelectorAll('[id^="constraint"]').forEach(function(c){
-        sinkconstraints[parseInt(c.dataset.nodeid)] = Array.from(c.selectedOptions).map(x => parseInt(x.dataset.nodeid));});
-      sourcesset = new Set(sources.map(x=>parseInt(x.id)));
-      sinkset = new Set(sinklist.map(x=>parseInt(x.id)));
+        sinkconstraints[c.dataset.nodeid] = Array.from(c.selectedOptions).map(x => x.dataset.nodeid);});
+      sourcesset = new Set(sources.map(x=>x.id));
+      sinkset = new Set(sinklist.map(x=>x.id));
       console.log(sinkset)
       s.graph.nodes().forEach(function(n){
-        i = parseInt(n.id);
+        i = n.id;
         if(!sourcesset.has(i)) d[i] = [];})
       s.graph.edges().forEach(function(e){
-        if(!sourcesset.has(parseInt(e.target)))
-        d[parseInt(e.target)].push(parseInt(e.source));
+        if(!sourcesset.has(e.target))
+        d[e.target].push(e.source);
       });
+      for (var [key, value] of Object.entries(d)) {
+        if(value[0].includes("Node")){
+          d[key] = d[value[0]]
+        }
+      }
+      for (var [key, value] of Object.entries(d)) {
+        if(key.includes("Node")){
+          delete d[key]
+        }
+      }
       ret = [];
       console.log(d);
       for (const [n, incoming] of Object.entries(d)) {
         if(!sinkset.has(n)){
-          ret.push([incoming, incoming.concat([n])])
+          console.log(incoming)
+          ret.push([incoming, incoming.concat(n)])
         }         
       }
       for (const [key, needs] of Object.entries(sinkconstraints)) {
         incoming = d[key];
         ret.push([incoming, needs.concat(incoming)])
       }
-      return JSON.stringify([ret].concat(sources.length, numNodes-sinklist.length));
+      return JSON.stringify([ret].concat(sources.length, numNodes-sinklist.length)).replace(/['"]+/g, '');
     }
     var nodes = [];
     s.bind("clickNodes", function(data){
+      if(window.event.shiftKey){
+        nodes = [];
+        return;
+      }
       nodes.push(data.data.node[0])
       console.log(nodes);
       if(nodes.length <= 1){
@@ -232,13 +305,14 @@ console.log(s)
     source: source,
     target: target,
     size: 3,
-    type: 'curve',
+    type: 'arrow',
     color: '#ccc',
     hover_color: '#000'});
       s.refresh();
       nodes = [];
 
     });
+    
   </script>
 </body>
 </html>

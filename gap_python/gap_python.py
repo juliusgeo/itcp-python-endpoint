@@ -6,6 +6,7 @@ class ITCP(object):
 
 	def __spawn__(self):
 		gap = pexpect.spawn('../../catpit/gap-valgrind/bin/gap.sh', encoding='ascii', codec_errors='ignore', timeout=120)
+		gap.setwinsize(20000,400)
 		gap.expect('gap>')
 		gap.sendline('LoadPackage("ITCP");')
 		gap.expect('gap>')
@@ -15,7 +16,7 @@ class ITCP(object):
 		try:
 			self.gap.sendline(s)
 			self.gap.expect('gap>')
-			return ''.join([i for i in self.gap.before if i in string.digits + string.ascii_letters + string.punctuation])
+			return self.gap.before
 		except:
 			print(self.gap.read(size=500))
 			self.gap.close()
