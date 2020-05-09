@@ -11,33 +11,42 @@
       margin: 0;
     }
     #graph {
-      width: 700px;
+      width: 100%;
       height: 700px;
       border-width:3px !important; 
     }
     #outputconsole {
       border-width:3px !important; 
-      height:200px;
+      height:400px;
       font-family: monospace;
+      overflow:hidden; overflow-y:scroll;
     }
     div{
       margin-top:10px;
       margin-bottom:10px;
     }
     #constraintSelection{
-      height:200px;
+      height:700px;
       overflow:hidden; overflow-y:scroll;
+    }
+    .col-md {
+      width: 400px !important;
     }
   </style>
 </head>
 <body>
-<div class="container">
+<div class="container" style="width:90%">
   <div class="row">
-  <div class="col-lg">
+    <div class="col-2" id="constraintSelection">
+  <br><p id="constraintMessage" style="visibility:hidden;">Set constraints on nodes you wish to be sinks (do this after drawing all nodes and edges)</p><br>
+  <ul class="list-group" id="selectConstraints"></li>
+  </ul>
+</div>
+  <div class="col-6">
   <div id="graph" class="border rounded"></div>
   </div>
 
-  <div class="col-sm">
+  <div class="col-4">
   Ctrl-Click to add node of type:<br>
   <select id="nodeTypes">
   <option value="source">source</option>
@@ -50,17 +59,11 @@
   <option value="ncrateregionob">NCRateRegionOB</option>
   <option value="NCSumRateUB">NCSumRateUB</option>
   </select>
-  <br>Set constraints on nodes you wish to be sinks (do this after drawing all nodes and edges)<br>
-  <ul class="list-group" id="selectConstraints">
-  <li class="list-group-item">Node 1 constraints:<select class="multiselect-ui form-control" multiple="multiple">
-    <option>Source1</option>
-    <option>Source2</option>
-  </select></li>
-</ul><br>
+  <br>
   <button id="compute" class="btn btn-primary">Compute</button>
   <div>
     <br>GAP output<br>
-    <div style="overflow-x: auto; overflow-y:auto; width=200px" id="outputconsole" class="border rounded">Output from GAP</div>
+    <div id="outputconsole" class="border rounded">Output from GAP</div>
 
 </div>
 </div>
@@ -245,6 +248,14 @@ console.log(s)
             return;
           })
       });
+        if(sinklist.length > 0){
+          document.getElementById("constraintMessage").style.visibility="visible";
+
+        }
+        else{
+          document.getElementById("constraintMessage").style.visibility="hidden";
+        }
+
         console.log(template);
       }
       
