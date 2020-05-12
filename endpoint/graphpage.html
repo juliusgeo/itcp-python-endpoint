@@ -88,6 +88,7 @@
      // e.preventDefault()}, false);
 
     var numNodes = 0;
+    var numSinks = 0;
     var sources = [];
     var sinklist = [];
     var constraints = {}
@@ -124,15 +125,15 @@ function addSink(x, y){
 
       s.graph.addNode({
       // Main attributes:
-      id: numNodes.toString(),
-      label: 'Sink '+numNodes.toString(),
+      id: 'Sink'+numSinks.toString(),
+      label: 'Sink '+numSinks.toString(),
       // Display attributes:
       x: x,
       y: y,
       size: nodeSize,
       color: '#349ceb'
     })
-        sinklist.push({id:numNodes.toString(), label:'Sink '+numNodes.toString()});
+        sinklist.push({id:'Sink'+numSinks.toString(), label:'Sink '+numSinks.toString()});
 
     }
 
@@ -221,7 +222,7 @@ console.log(s)
             addInter(x, y);
             break;
           case "sink":
-            numNodes++;
+            numSinks++;
             addSink(x, y);
             break;
         }
@@ -241,7 +242,7 @@ console.log(s)
             var selectedopts = Array.from(this.selectedOptions).map(x => parseInt(x.dataset.nodeid))
             s.graph.nodes().forEach(function(n){
               if(n.id == sinknodeid){
-                n.label = "Sink "+sinknodeid+": "+selectedopts.join();
+                n.label = sinknodeid+": "+selectedopts.join();
               }
             })
             s.refresh();
@@ -263,7 +264,7 @@ console.log(s)
     function createGapConstraints(){
       d = {}
       sinkconstraints = {}
-      document.querySelectorAll('[id^="constraint"]').forEach(function(c){
+      document.querySelectorAll('[id^="constraint"] select').forEach(function(c){
         sinkconstraints[c.dataset.nodeid] = Array.from(c.selectedOptions).map(x => x.dataset.nodeid);});
       sourcesset = new Set(sources.map(x=>x.id));
       sinkset = new Set(sinklist.map(x=>x.id));
@@ -297,7 +298,7 @@ console.log(s)
         incoming = d[key];
         ret.push([incoming, needs.concat(incoming)])
       }
-      return JSON.stringify([ret].concat(sources.length, numNodes-sinklist.length)).replace(/['"]+/g, '');
+      return JSON.stringify([ret].concat(sources.length, numNodes)).replace(/['"]+/g, '');
     }
     var nodes = [];
     s.bind("clickNodes", function(data){
@@ -309,8 +310,14 @@ console.log(s)
       console.log(nodes);
       if(nodes.length <= 1){
         return;
+
       }
       source = nodes[nodes.length-2].id;
+      if(source.includes("Node")){
+        nodes = [];
+        return;
+      }
+
       target = nodes[nodes.length-1].id;
       s.graph.addEdge({id: source+target,
     source: source,
