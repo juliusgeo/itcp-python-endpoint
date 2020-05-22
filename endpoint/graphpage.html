@@ -6,6 +6,15 @@
   <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
 <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+
+
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
+</script>
+<script type="text/javascript" async
+  src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-MML-AM_CHTML">
+</script>
+
   <style type="text/css">
     body {
       margin: 0;
@@ -56,6 +65,7 @@
   <option value="sink">sink</option>
   </select>
   <br>Shift+click on a node then click on a location to create a new message for that node<br>
+  <br>Click on two nodes in quick succession to create a directed edge between them<br>
   <br>Select function you wish to compute on graph<br>
   <select id="functionTypes">
   <option value="NetSymGroup">NetSymGroup</option>
@@ -158,8 +168,9 @@ function addSink(x, y){
         console.log(xhr);
         xhr.onreadystatechange = function () { 
         if (xhr.readyState == 4 && xhr.status == 200) {
-            console.log(xhr.responseText)
-            document.getElementById("outputconsole").textContent = xhr.responseText;
+            parsedResponse = xhr.responseText.trim().replace(/(?:\ r\n|\r|\n)/g, '\\');
+            document.getElementById("outputconsole").innerHTML = "$"+parsedResponse+"$";
+            MathJax.Hub.Queue(["Typeset",MathJax.Hub,"outputconsole"]);
             }
         }
         var data = JSON.stringify({"function":func,"idsc":createGapConstraints()});
