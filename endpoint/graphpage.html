@@ -36,6 +36,8 @@
 </head>
 <body>
 <div class="container" style="width:90%">
+  <div id="alertbox" class="alert alert-danger" role="alert" style="visibility: hidden">
+  </div>
   <div class="row">
     <div class="col-2" id="constraintSelection">
   <br><p id="constraintMessage" style="visibility:hidden;">Set constraints on nodes you wish to be sinks (do this after drawing all nodes and edges)</p><br>
@@ -53,6 +55,7 @@
   <option value="inter">non-source</option>
   <option value="sink">sink</option>
   </select>
+  <br>Shift+click on a node then click on a location to create a new message for that node<br>
   <br>Select function you wish to compute on graph<br>
   <select id="functionTypes">
   <option value="NetSymGroup">NetSymGroup</option>
@@ -93,6 +96,7 @@
     var sinklist = [];
     var constraints = {}
     var messageSourceNode = null;
+    var messages = [];
     var numIgnoreNodes = 0;
     function addSource(x, y){
 
@@ -167,7 +171,10 @@ function addSink(x, y){
     function addMessage(e){
       if(window.event.shiftKey){
         messageSourceNode = e.data.node.id;
-        console.log(messageSourceNode);
+        if(sinklist.map(x=> x.id).includes(messageSourceNode) || messages.includes(messageSourceNode) || sources.map(x=> x.id).includes(messageSourceNode)){
+          display_danger_alert("Only intermediate nodes can have messages")
+          messageSourceNode = null;
+        }
       }
       else{
 
@@ -205,6 +212,7 @@ console.log(s)
           hover_color: '#000'});
           s.refresh();
           messageSourceNode = null;
+          messages.push(numNodes.toString());
           return;
       }
         
@@ -301,7 +309,15 @@ console.log(s)
       return JSON.stringify([ret].concat(sources.length, numNodes)).replace(/['"]+/g, '');
     }
     var nodes = [];
+    var timefunc;
+    function display_danger_alert(message){
+      document.getElementById("alertbox").style.visibility="visible";
+      document.getElementById("alertbox").innerHTML = message;
+      setTimeout(function(){document.getElementById("alertbox").style.visibility="hidden";
+      document.getElementById("alertbox").innerHTML = "";}, 4000)
+    }
     s.bind("clickNodes", function(data){
+
       if(window.event.shiftKey){
         nodes = [];
         return;
@@ -309,25 +325,35 @@ console.log(s)
       nodes.push(data.data.node[0])
       console.log(nodes);
       if(nodes.length <= 1){
+        timefunc = setTimeout(function() {console.log("timed out"); nodes = [];}, 4000);
         return;
-
       }
+      else{
+      clearTimeout(timefunc);
       source = nodes[nodes.length-2].id;
-      if(source.includes("Node")){
+      if(source.includes("Node") || sinklist.map(x=> x.id).includes(source)){
+        display_danger_alert("Cannot have Nodes or sinks as source of directed edge")
         nodes = [];
         return;
       }
-
       target = nodes[nodes.length-1].id;
+      if(messages.includes(target) || sources.map(x=> x.id).includes(target)){
+        display_danger_alert("Cannot have message or source as target of directed edge")
+        nodes = [];
+        return;
+      }
       s.graph.addEdge({id: source+target,
-    source: source,
-    target: target,
-    size: 3,
-    type: 'arrow',
-    color: '#ccc',
-    hover_color: '#000'});
+        source: source,
+        target: target,
+        size: 3,
+        type: 'arrow',
+        color: '#ccc',
+        hover_color: '#000'
+      });
       s.refresh();
       nodes = [];
+      }
+      
 
     });
     
