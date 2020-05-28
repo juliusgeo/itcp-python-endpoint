@@ -9,7 +9,6 @@ class ITCP(object):
 		gap.setwinsize(20000,400)
 		gap.expect('gap>')
 		gap.sendline('LoadPackage("ITCP");')
-		gap.sendline('LoadPackage("ITAP");')
 		gap.expect('gap>')
 		return gap
 
