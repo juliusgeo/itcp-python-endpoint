@@ -1,9 +1,6 @@
 import sys
 sys.path.append('../')
 from gap_python import ITCP
-t = ITCP()
-out = t.__execfunction__("rlist:=NCRateRegionOB([[[ [ 1, 2 ], [ 1, 2, 4 ] ], [ [ 2, 3 ], [ 2, 3, 5 ] ],[ [ 4, 5 ], [ 4, 5, 6 ] ], [ [ 3, 4 ], [ 3, 4, 7 ] ],[ [ 1, 6 ], [ 3, 1, 6 ] ], [ [ 6, 7 ], [ 2, 6, 7 ] ],[ [ 5, 7 ], [ 1, 5, 7 ] ] ], 3, 7 ],true,[]);;")
-print(out)
 from flask import Flask, request
 from flask_cors import CORS, cross_origin
 app = Flask(__name__)
@@ -19,6 +16,7 @@ def itcpendpoint():
 	data = data['idsc']
 	return executefunction(function, data)
 def executefunction(func, data):
+	t = ITCP()
 	if func.lower() == "netsymgroup":
 		return t.__execfunction__("G:=NetSymGroup("+str(data)+");")
 	elif func.lower() == "ncrateregionob":
@@ -26,4 +24,4 @@ def executefunction(func, data):
 		return t.__execfunction__("Display(rlist[2]);")
 
 if __name__ == '__main__':
-    app.run(debug=True, host="0.0.0.0", port=5000)
+    app.run(debug=True, host="0.0.0.0", port=5000, threaded=True)

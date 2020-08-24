@@ -5,7 +5,7 @@ class ITCP(object):
 		self.gap = self.__spawn__()
 
 	def __spawn__(self):
-		gap = pexpect.spawn('/catpit/gap4r8/bin/gap.sh', encoding='ascii', codec_errors='ignore', timeout=20)
+		gap = pexpect.spawn('/home/julius/catpit/gap-valgrind/bin/gap.sh', encoding='ascii', codec_errors='ignore', timeout=20)
 		gap.setwinsize(20000,400)
 		gap.expect('gap>')
 		gap.sendline('LoadPackage("ITCP");')
